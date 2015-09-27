@@ -12,7 +12,11 @@
 #include <signal.h>
 
 int main(int argc, char **argv) {
-
+    char buff[1024];
+    printf("shell# ");
+    fgets(buff,1024,stdin);
+    // switch (/* expression */) {
+    //     case /* value */:
+    // }
     return 0;
 }
-
