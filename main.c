@@ -10,43 +10,54 @@
 #include <sys/stat.h>
 #include <poll.h>
 #include <signal.h>
-
-struct list{
-    char * str[1024];
-}; typedef struct list _list;
+#include <stdbool.h>
 
 char ** get_cmds(char buff[], int *num_cmds){
     int * num = num_cmds;
-    strtok(buff,"\n");
+    *num = 1;
     printf("|%s|\n",buff);
-    for(int i = 0; i < strlen(buff) - 1; i++){
-        if(buff[i] == '#'){
-            buff[i] = '\0';
-            break;
-        }
-        if(buff[i] == '&' && buff[i + 1] == '&')
-            num_cmds ++;
+    if(strchr(buff,'#')){
+        char * nul = strchr(buff,'#');
+        *nul = '\0';
     }
-    char ** cmds[(*num_cmds)] = malloc(sizeof(char)*(*num_cmds));
+    do{
+        if(!strstr(buff,"&&"))
+            break;
+        char * ptr = strstr(buff,"&&") + sizeof(char) * 2; // points to char after substring "&&"
+        while(strstr(ptr,"&&")){
+            (*num)++;
+            ptr = strstr(buff,"&&") + sizeof(char) * 2;
+        }
+        break;
+    }while(true);   // count num_cmds
+    char ** cmds = malloc(sizeof(char*) * (*num));
+    printf("TESTING | num = %d | strlen buff = %lu\n",*num,strlen(buff));
     if(*num == 1){
-        strcpy(*cmds[0],buff);
+        cmds[0] = malloc(sizeof(char) * strlen(buff));
+        strncpy(cmds[0],buff,strlen(buff));
+        printf("cmds[0] = |%s|\n",cmds[0]);
     }
     else{
         int n = 0;
-        int tmp = 0;
-        while(n < *num){
-            for(int j = 0; j < strlen(buff) - 1; j++){
-                if(buff[j] == '&' && buff[j + 1] == '&'){
-                    strncpy(*cmds[n],&buff[tmp],j - tmp); // copies from previous word (or start) until j
-                    tmp = j;
-                    strncpy(*cmds[j - n],"\0",1);
-                }
-            }
+        char * ptr = buff;
+        while(n < *num && strstr(ptr,"&&")){
+            int x = strstr(ptr,"&&") - ptr;
+            cmds[n] = malloc(sizeof(char) * x);
+            strncpy(cmds[n],ptr,x);
+            printf("|%s|\n",cmds[n]);
+            n++;
+            ptr = strstr(buff,"&&") + sizeof(char) * 2; // moves pointer to next command
         }
     }
     for(int i = 0; i < *num; i++)
-        printf("%s\n",*cmds[i]);
-    return *cmds;
+        printf("||%s||\n",cmds[i]);
+    return cmds;
+}
+
+void free_allocs(char ** cmds, int * num_cmds){
+    for(int i = 0; i < *num_cmds;i++)
+        free(&cmds[i]);
+    return;
 }
 
 int main(int argc, char **argv) {
@@ -54,11 +65,15 @@ int main(int argc, char **argv) {
     char * prompt = "shell# ";
     printf("%s",prompt);
     fflush(stdout);
-    int num_cmds;
+    int num_cmds = 0;
     char ** cmds;
     while(fgets(buff,1024,stdin) != NULL){
+        if(strchr(buff,'\n')){
+            fflush(stdin);
+        }
+        strtok(buff,"\n");
         cmds = get_cmds(buff,&num_cmds);
-
     }
+    free_allocs(cmds,&num_cmds);
     return 0;
 }
