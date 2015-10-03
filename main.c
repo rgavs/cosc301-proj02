@@ -12,22 +12,34 @@
 #include <signal.h>
 #include <stdbool.h>
 
+char * trim(char * str){
+    strtok(str,"/#\n");
+    if(str[0] == ' '){
+        char * edit = &str[1];
+        str = edit;
+    }
+    if(strrchr(str,' ') != NULL && strlen(strrchr(str,' '))==1){
+        char * p = strrchr(str, ' ');
+        *p = '\0';
+    }               // if there's a space at the end, remove it
+    return str;
+}
+
 char ** get_cmds(char buff[], int *num_cmds){
     int * num = num_cmds;
     *num = 1;
-    printf("|%s|\n",buff);
-    if(strchr(buff,'#')){
-        char * nul = strchr(buff,'#');
-        *nul = '\0';
-    }
     do{
-        if(!strstr(buff,"&&"))
+        if(!strstr(buff,"&&")){
             break;
+        }
+        printf("THERES SOME AMPS IN HUR\n");
+        (*num)++;
         char * ptr = strstr(buff,"&&") + sizeof(char) * 2; // points to char after substring "&&"
         while(strstr(ptr,"&&")){
             (*num)++;
             ptr = strstr(buff,"&&") + sizeof(char) * 2;
         }
+        printf("numbah is -> |%d|\n",*num);
         break;
     }while(true);   // count num_cmds
     char ** cmds = malloc(sizeof(char*) * (*num));
@@ -40,11 +52,12 @@ char ** get_cmds(char buff[], int *num_cmds){
     else{
         int n = 0;
         char * ptr = buff;
-        while(n < *num && strstr(ptr,"&&")){
+        while(n < *num){
             int x = strstr(ptr,"&&") - ptr;
             cmds[n] = malloc(sizeof(char) * x);
             strncpy(cmds[n],ptr,x);
-            printf("|%s|\n",cmds[n]);
+            cmds[n] = trim(cmds[n]);
+            printf("! |%s| !\n",cmds[n]);
             n++;
             ptr = strstr(buff,"&&") + sizeof(char) * 2; // moves pointer to next command
         }
@@ -67,11 +80,8 @@ int main(int argc, char **argv) {
     fflush(stdout);
     int num_cmds = 0;
     char ** cmds;
-    while(fgets(buff,1024,stdin) != NULL){
-        if(strchr(buff,'\n')){
-            fflush(stdin);
-        }
-        strtok(buff,"\n");
+    while(fgets(buff,1024,stdin) != NULL && !strstr(buff,"^D")){
+        trim(buff);
         cmds = get_cmds(buff,&num_cmds);
     }
     free_allocs(cmds,&num_cmds);
