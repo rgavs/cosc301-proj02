@@ -63,18 +63,16 @@ strlist * get_cmds(char buff[], int * num_cmds){
         (*num)++;
         char * ptr = strstr(buff,"&&") + sizeof(char) * 2;  // points to char after substring "&&"
         while(strstr(ptr,"&&")){
-            printf("line 66:    TESTING -- ptr = %s -- *num = %d\n",ptr,*num);
             (*num)++;
             ptr = strstr(ptr,"&&") + sizeof(char) * 2;
         }
-        printf("line 69:    numbah is -> |%d|\n",*num);
         break;
     }while(true);   // count num_cmds
-    printf("line 72:    TESTING | num = %d | strlen buff = %lu\n",*num,strlen(buff));
+    printf("line 71:    TESTING | *num = %d | strlen buff = %lu\n",*num,strlen(buff));
     strlist * head = NULL;
     if(*num == 1){
         head = append_list(NULL,buff);
-        printf("line 77:    head->str = |%s|\n",head->str);
+        printf("line 75:    head->str = |%s|\n",head->str);
         return head;
     }
     else{
@@ -92,11 +90,11 @@ strlist * get_cmds(char buff[], int * num_cmds){
                 strncpy(s,point,strlen(point));
             }
             item = append_list(item,s);
-            printf("line 95:    item->str = |%s| -- x + 2 = %d -- point = |%s| -- strlen(point) = %lu\n",item->str,(x+2),point,strlen(point)); // FIX THIS LINE!!
+            printf("line 93:    item->str = |%s| -- x + 2 = %d -- point = |%s| -- strlen(point) = %lu\n",item->str,(x+2),point,strlen(point)); // FIX THIS LINE!!
             point = &point[x+2];
-            printf("line 97:    point = |%s|\n",point);
+            printf("line 95:    point = |%s|\n",point);
         }
-        printf("line 99:    OUT OF WHILE LOOP\n");
+        printf("line 97:    OUT OF WHILE LOOP\n");
         free(s);
     }
     return head;
@@ -123,7 +121,7 @@ int main(int argc, char ** argv) {
     while(fgets(buff,1024,stdin) != NULL && !strstr(buff,"^D")){
         trim(buff);
         cmd_list= get_cmds(buff,&num_cmds);
-        printf("line 131:   RETURNED FROM get_cmds");
+        printf("line 124:   RETURNED FROM get_cmds\n");
     }
     free_allocs(cmd_list);
     return 0;
