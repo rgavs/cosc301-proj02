@@ -58,22 +58,23 @@ strlist * get_cmds(char buff[], int *num_cmds){
         if(!strstr(buff,"&&")){
             break;
         }
-        printf("THERES SOME AMPS IN HUR\n");
+        printf("line 61:    THERES SOME AMPS IN HUR\n");
         (*num)++;
         char * ptr = strstr(buff,"&&") + sizeof(char) * 2;  // points to char after substring "&&"
         while(strstr(ptr,"&&")){
+            printf("TESTING -- ptr = %s & *num = %d\n",ptr,*num);
             (*num)++;
-            ptr = strstr(buff,"&&") + sizeof(char) * 2;
+            ptr = strstr(ptr,"&&") + sizeof(char) * 2;
         }
-        printf("numbah is -> |%d|\n",*num);
+        printf("line 69:    numbah is -> |%d|\n",*num);
         break;
     }while(true);   // count num_cmds
-    printf("TESTING | num = %d | strlen buff = %lu\n",*num,strlen(buff));
+    printf("line 72:    TESTING | num = %d | strlen buff = %lu\n",*num,strlen(buff));
 
-    strlist * head = append_list(NULL,buff);
-    printf("head->str = |%s|\n",head->str);
-
+    strlist * head = NULL;
     if(*num == 1){
+        head = append_list(NULL,buff);
+        printf("line 77:    head->str = |%s|\n",head->str);
         return head;
     }
     else{
@@ -85,20 +86,15 @@ strlist * get_cmds(char buff[], int *num_cmds){
             int x = strstr(point,"&&") - point;             // pointer arithmetic to get size of substring
             strncpy(s,point,x);
             item = append_list(item,s);
+            printf("line 89:     item->str = |%s|\n",item->str);
         }
         free(s);
-        // while(n < *num){
-        //     int x = strstr(ptr,"&&") - ptr;
-        //     cmds[n] = malloc(sizeof(char) * x);
-        //     strncpy(cmds[n],ptr,x);
-        //     cmds[n] = trim(cmds[n]);
-        //     printf("! |%s| !\n",cmds[n]);
-        //     n++;
-        //     ptr = strstr(buff,"&&") + sizeof(char) * 2;     // moves pointer to next command
-        // }
     }
-    // for(int j = 0; j < *num; j++)
-    //     printf("||%s||\n",cmds[j]);
+    strlist * printer = head;
+    while(printer!=NULL){
+        printf("line 94:    |%s|\n",printer->str);
+        printer = printer->next;
+    }
     return head;
 }
 
