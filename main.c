@@ -18,26 +18,6 @@ struct str_list{
     struct str_list * next;
 }; typedef struct str_list strlist;
 
-// Both initializes and appends new strlist to a strlist parameter
-// with ->str value as a parameter
-strlist * append_list(strlist * curr,char * s){
-    strlist * tmp;
-    if(curr==NULL){                                         // Initializes
-        tmp = malloc(sizeof(strlist));
-        tmp->str = malloc(strlen(s));
-        strncpy(tmp->str,s,strlen(s));
-        tmp->next = NULL;
-    }
-    else{
-        curr->next = malloc(sizeof(strlist));
-        tmp = curr->next;
-        tmp->str = malloc(strlen(s));
-        strncpy(tmp->str,s,strlen(s));
-        tmp->next = NULL;
-    }
-    return tmp;
-}
-
 char * trim(char * str){
     strtok(str,"/#\n");
     if(str[0] == ' '){
@@ -51,18 +31,39 @@ char * trim(char * str){
     return str;
 }
 
-strlist * get_cmds(char buff[], int *num_cmds){
+// Both initializes and appends new strlist to a strlist parameter
+// with ->str value as a parameter
+strlist * append_list(strlist * curr, char * s){
+    strlist * tmp;
+    char * st = trim(s);
+    if(curr==NULL){                                         // Initializes
+        tmp = malloc(sizeof(strlist));
+        tmp->str = malloc(strlen(st));
+        strncpy(tmp->str,st,strlen(st));
+        tmp->next = NULL;
+    }
+    else{
+        curr->next = malloc(sizeof(strlist));
+        tmp = curr->next;
+        tmp->str = malloc(strlen(st));
+        strncpy(tmp->str,st,strlen(st));
+        tmp->next = NULL;
+    }
+    return tmp;
+}
+
+strlist * get_cmds(char buff[], int * num_cmds){
     int * num = num_cmds;
     *num = 1;
     do{
         if(!strstr(buff,"&&")){
             break;
         }
-        printf("line 61:    THERES SOME AMPS IN HUR\n");
+        printf("line 61:    MULTI-COMMAND STRING\n");
         (*num)++;
         char * ptr = strstr(buff,"&&") + sizeof(char) * 2;  // points to char after substring "&&"
         while(strstr(ptr,"&&")){
-            printf("TESTING -- ptr = %s & *num = %d\n",ptr,*num);
+            printf("line 66:    TESTING -- ptr = %s -- *num = %d\n",ptr,*num);
             (*num)++;
             ptr = strstr(ptr,"&&") + sizeof(char) * 2;
         }
@@ -70,7 +71,6 @@ strlist * get_cmds(char buff[], int *num_cmds){
         break;
     }while(true);   // count num_cmds
     printf("line 72:    TESTING | num = %d | strlen buff = %lu\n",*num,strlen(buff));
-
     strlist * head = NULL;
     if(*num == 1){
         head = append_list(NULL,buff);
@@ -82,18 +82,22 @@ strlist * get_cmds(char buff[], int *num_cmds){
         strlist * item = head;
         char * point = buff;
         char * s = malloc(sizeof(char)*1024);
-        for(int i = 0; i < *num; i++){
-            int x = strstr(point,"&&") - point;             // pointer arithmetic to get size of substring
-            strncpy(s,point,x);
+        int x = 0;
+        while(strstr(point,"&&") || strlen(point) > 0){
+            if(strstr(point,"&&")){
+                x = strstr(point,"&&") - point;             // pointer arithmetic to get size of substring
+                strncpy(s,point,x);
+            }
+            else{
+                strncpy(s,point,strlen(point));
+            }
             item = append_list(item,s);
-            printf("line 89:     item->str = |%s|\n",item->str);
+            printf("line 95:    item->str = |%s| -- x + 2 = %d -- point = |%s| -- strlen(point) = %lu\n",item->str,(x+2),point,strlen(point)); // FIX THIS LINE!!
+            point = &point[x+2];
+            printf("line 97:    point = |%s|\n",point);
         }
+        printf("line 99:    OUT OF WHILE LOOP\n");
         free(s);
-    }
-    strlist * printer = head;
-    while(printer!=NULL){
-        printf("line 94:    |%s|\n",printer->str);
-        printer = printer->next;
     }
     return head;
 }
@@ -109,7 +113,7 @@ void free_allocs(strlist * head){
     return;
 }
 
-int main(int argc, char **argv) {
+int main(int argc, char ** argv) {
     char buff[1024];
     char * prompt = "shell# ";
     printf("%s",prompt);
@@ -119,6 +123,7 @@ int main(int argc, char **argv) {
     while(fgets(buff,1024,stdin) != NULL && !strstr(buff,"^D")){
         trim(buff);
         cmd_list= get_cmds(buff,&num_cmds);
+        printf("line 131:   RETURNED FROM get_cmds");
     }
     free_allocs(cmd_list);
     return 0;
