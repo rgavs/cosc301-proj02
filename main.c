@@ -17,7 +17,7 @@ struct str_list{
     char * str;
     struct str_list * next;
 }; typedef struct str_list strlist;
-
+//comment
 char * trim(char * str){
     strtok(str,"\n");
     if(str[0] == ' '){
