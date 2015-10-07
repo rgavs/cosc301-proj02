@@ -19,12 +19,12 @@ struct str_list{
 }; typedef struct str_list strlist;
 
 char * trim(char * str){
-    strtok(str,"/#\n");
+    strtok(str,"\n");
     if(str[0] == ' '){
         char * edit = &str[1];
         str = edit;
     }
-    if(strrchr(str,' ') != NULL && strlen(strrchr(str,' '))==1){
+    if(strrchr(str,' ') != NULL && strlen(strrchr(str,' ')) == 1){
         char * p = strrchr(str, ' ');
         *p = '\0';
     }                                                       // if there's a space at the end, remove it
@@ -56,15 +56,15 @@ strlist * get_cmds(char buff[], int * num_cmds){
     int * num = num_cmds;
     *num = 1;
     do{
-        if(!strstr(buff,"&&")){
+        if(!strstr(buff,";")){
             break;
         }
         printf("line 61:    MULTI-COMMAND STRING\n");
         (*num)++;
-        char * ptr = strstr(buff,"&&") + sizeof(char) * 2;  // points to char after substring "&&"
-        while(strstr(ptr,"&&")){
+        char * ptr = strstr(buff,";") + sizeof(char);  // points to char after substring ";"
+        while(strstr(ptr,";")){
             (*num)++;
-            ptr = strstr(ptr,"&&") + sizeof(char) * 2;
+            ptr = strstr(ptr,";") + sizeof(char);
         }
         break;
     }while(true);   // count num_cmds
@@ -81,9 +81,9 @@ strlist * get_cmds(char buff[], int * num_cmds){
         char * point = buff;
         char * s = malloc(sizeof(char)*1024);
         int x = 0;
-        while(strstr(point,"&&") || strlen(point) > 0){
-            if(strstr(point,"&&")){
-                x = strstr(point,"&&") - point;             // pointer arithmetic to get size of substring
+        while(strstr(point,";") || strlen(point) > 0){
+            if(strstr(point,";")){
+                x = strstr(point,";") - point;             // pointer arithmetic to get size of substring
                 strncpy(s,point,x);
             }
             else{
@@ -100,6 +100,22 @@ strlist * get_cmds(char buff[], int * num_cmds){
     return head;
 }
 
+char ** get_args(char * cmd){
+    char ** ret = malloc(sizeof(char *) * 2);
+    char cwd[1024];
+    getcwd(cwd,strlen(cwd));
+    char * bin = malloc(sizeof(char) * 1024);
+    char * argv = malloc(sizeof(char) * 1024);
+    if (strstr(cmd," ")){
+        strcpy(bin,strstr(cmd," "));
+        memcpy(argv, &(cmd[sizeof(bin)]), 1024-sizeof(bin));
+    }
+    else {
+        strcpy(bin,cmd);
+    }
+    return ret;
+}
+
 void free_allocs(strlist * head){
     strlist * tmp = head;
     strlist * tmp2 = tmp->next;
@@ -112,6 +128,7 @@ void free_allocs(strlist * head){
 }
 
 int main(int argc, char ** argv) {
+    bool ex = false;
     char buff[1024];
     char * prompt = "shell# ";
     printf("%s",prompt);
@@ -120,8 +137,10 @@ int main(int argc, char ** argv) {
     strlist * cmd_list;
     while(fgets(buff,1024,stdin) != NULL && !strstr(buff,"^D")){
         trim(buff);
-        cmd_list= get_cmds(buff,&num_cmds);
+        cmd_list = get_cmds(buff,&num_cmds);
         printf("line 124:   RETURNED FROM get_cmds\n");
+        char ** tuple = get_args(cmd_list->str);
+        execv(tuple[0],&tuple[1]);
     }
     free_allocs(cmd_list);
     return 0;
