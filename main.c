@@ -55,6 +55,10 @@ strlist * append_list(strlist * curr, char * s){
 strlist * get_cmds(char buff[], int * num_cmds){
     int * num = num_cmds;
     *num = 1;
+    if(strchr(buff,'#')){
+        char * p = strchr(buff,'#');
+        buff[(p - buff)/sizeof(char)] = '\0';
+    }
     do{
         if(!strstr(buff,";")){
             break;
@@ -62,9 +66,9 @@ strlist * get_cmds(char buff[], int * num_cmds){
         printf("line 61:    MULTI-COMMAND STRING\n");
         (*num)++;
         char * ptr = strstr(buff,";") + sizeof(char);  // points to char after substring ";"
-        while(strstr(ptr,";")){
+        while(strchr(ptr,';')){
             (*num)++;
-            ptr = strstr(ptr,";") + sizeof(char);
+            ptr = strchr(ptr,';') + sizeof(char);
         }
         break;
     }while(true);   // count num_cmds
@@ -99,19 +103,35 @@ strlist * get_cmds(char buff[], int * num_cmds){
     return head;
 }
 
-char ** get_args(char * cmd){                              // takes string and splits into /bin command
-    char ** ret = malloc(sizeof(char *) * 2);                   // and flags/options etc
-    char cwd[1024];
-    getcwd(cwd,strlen(cwd));
+char ** get_args(char * cmd, bool * ex, char * mode){                              // takes string and splits into /bin command
+    char ** ret = malloc(sizeof(char *) * 2);                         // and flags/options etc
     char * bin = malloc(sizeof(char) * 1024);
     char * argv = malloc(sizeof(char) * 1024);
+    argv = "";
+    trim(cmd);
+    if(strcmp(cmd,"mode sequential")
+            || strcmp(cmd,"mode  s")){
+        cmd = "s";
+        *mode = 's';
+    }
+    else if(strcmp(cmd,"mode parallel")
+            || strcmp(cmd,"mode p")){
+        cmd = "p";
+        *mode = 'p';
+    }
+    else if(strcmp(cmd,"exit") || strstr(cmd,"exit()")){
+            *ex = true;
+            cmd = "ex";
+    }
     if (strstr(cmd," ")){
-        strcpy(bin,strstr(cmd," "));
-        memcpy(argv, &(cmd[sizeof(bin)]), 1024-sizeof(bin));
+        strncpy(bin,cmd,(strstr(cmd," ")-cmd)/sizeof(char));
+        memcpy(argv, &(cmd[strlen(bin)]), 1024 - strlen(bin));
     }
     else {
         strcpy(bin,cmd);
     }
+    ret[0] = bin;
+    ret[1] = argv;
     return ret;
 }
 
@@ -129,7 +149,7 @@ void free_allocs(strlist * head){
 int main(int argc, char ** argv) {
     bool ex = false;
     char buff[1024];
-    char mode = 's';            // mode is either 's' or 'p' for sequential or parallel
+    char mode = 's';
     char * prompt = "shell# ";
     printf("%s",prompt);
     fflush(stdout);
@@ -140,25 +160,17 @@ int main(int argc, char ** argv) {
         cmd_list = get_cmds(buff,&num_cmds);
         printf("line 124:   RETURNED FROM get_cmds\n");
         while(cmd_list != NULL){
-            char ** tuple = get_args(cmd_list->str);
-            if(strcmp(tuple[0],"sequential")){            // if else ladder may be cleaner in helper function
-                mode = 's';
-            }
-            else if(strcmp(tuple[0],"paralell")){
-                mode = 'p';
-            }
-            else if((strlen(tuple[0]) == 4 && strstr("exit",tuple[0])) ||
-                (strlen(tuple[0]) == 6 && strstr("exit()",tuple[0]))){
-                    ex = true;
-            }
+            char ** tuple = get_args(cmd_list->str, &ex, &mode);
+            printf("mode = %c -- ex = %d-- cmd = |%s| -- argv = |%s|",mode,ex,tuple[0],tuple[1]);
             if(mode == 's'){
+                fork();
                 execv(tuple[0],&tuple[1]);
             }/*
-            else(                                     // this else indicates parallel
+            else{                                     // this else indicates parallel
                 if(cmd_list->next == NULL){
                     execv(tuple[0],&tuple[1])
                 }
-            )*/
+            }*/
             if(cmd_list->next == NULL && ex){
                 exit(EXIT_SUCCESS);
             }
