@@ -90,7 +90,6 @@ strlist * get_cmds(char buff[], int * num_cmds){
                 strncpy(s,point,strlen(point));
             }
             item = append_list(item,s);
-            printf("line 93:    item->str = |%s| -- x + 2 = %d -- point = |%s| -- strlen(point) = %lu\n",item->str,(x+2),point,strlen(point)); // FIX THIS LINE!!
             point = &point[x+2];
             printf("line 95:    point = |%s|\n",point);
         }
@@ -100,8 +99,8 @@ strlist * get_cmds(char buff[], int * num_cmds){
     return head;
 }
 
-char ** get_args(char * cmd){
-    char ** ret = malloc(sizeof(char *) * 2);
+char ** get_args(char * cmd){                              // takes string and splits into /bin command
+    char ** ret = malloc(sizeof(char *) * 2);                   // and flags/options etc
     char cwd[1024];
     getcwd(cwd,strlen(cwd));
     char * bin = malloc(sizeof(char) * 1024);
@@ -130,6 +129,7 @@ void free_allocs(strlist * head){
 int main(int argc, char ** argv) {
     bool ex = false;
     char buff[1024];
+    char mode = 's';            // mode is either 's' or 'p' for sequential or parallel
     char * prompt = "shell# ";
     printf("%s",prompt);
     fflush(stdout);
@@ -139,8 +139,31 @@ int main(int argc, char ** argv) {
         trim(buff);
         cmd_list = get_cmds(buff,&num_cmds);
         printf("line 124:   RETURNED FROM get_cmds\n");
-        char ** tuple = get_args(cmd_list->str);
-        execv(tuple[0],&tuple[1]);
+        while(cmd_list != NULL){
+            char ** tuple = get_args(cmd_list->str);
+            if(strcmp(tuple[0],"sequential")){            // if else ladder may be cleaner in helper function
+                mode = 's';
+            }
+            else if(strcmp(tuple[0],"paralell")){
+                mode = 'p';
+            }
+            else if((strlen(tuple[0]) == 4 && strstr("exit",tuple[0])) ||
+                (strlen(tuple[0]) == 6 && strstr("exit()",tuple[0]))){
+                    ex = true;
+            }
+            if(mode == 's'){
+                execv(tuple[0],&tuple[1]);
+            }/*
+            else(                                     // this else indicates parallel
+                if(cmd_list->next == NULL){
+                    execv(tuple[0],&tuple[1])
+                }
+            )*/
+            if(cmd_list->next == NULL && ex){
+                exit(EXIT_SUCCESS);
+            }
+            cmd_list = cmd_list->next;
+        }
     }
     free_allocs(cmd_list);
     return 0;
