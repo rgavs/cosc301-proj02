@@ -222,7 +222,6 @@ int main(int argc, char ** argv) {
         //wait for parallel process
         wait(&num_process);
 
-        free(stat);
         mode = modenext;
     }
     free_allocs(head);
