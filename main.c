@@ -38,7 +38,7 @@ strlist * append_list(strlist * curr, char * s){
     char * st = trim(s);
     if(curr==NULL){                                         // Initializes
         tmp = malloc(sizeof(strlist));
-        tmp->str = malloc(strlen(st));
+        tmp->str = malloc(sizeof(char)*strlen(st));
         strncpy(tmp->str,st,strlen(st));
         tmp->next = NULL;
     }
@@ -95,16 +95,20 @@ strlist * get_cmds(char * buff, int * num_cmds){
                 strncpy(s,point,strlen(point));
             }
             item = append_list(item,s);
-            point = &point[x+2];
-            printf("line 97:    point = |%s|\n",point);
+            point = &point[x + 1];
+            printf("line 99:    point = |%s|\n",point);
+            item->next = malloc(sizeof(strlist));
+            item = item->next;
         }
-        printf("line 99:    OUT OF WHILE LOOP\n");
+        item = NULL;
+        printf("line 101:    OUT OF WHILE LOOP\n");
         free(s);
     }
     return head;
 }
 
 char ** get_args(char * cmd, bool * ex, char * modenext){                              // takes string and splits into /bin command
+    printf("in get_args");
     char ** ret = malloc(sizeof(char *) * 2);                         // and flags/options etc
     char * bin = malloc(sizeof(char) * 1024);
     char * argv = malloc(sizeof(char) * 1024);
@@ -160,10 +164,12 @@ int main(int argc, char ** argv) {
     while(fgets(buff,1024,stdin) != NULL && !strstr(buff,"^D")){
         trim(buff);
         cmd_list = get_cmds(buff, &num_cmds);
-        printf("line 160:   RETURNED FROM get_cmds\n");
+        printf("line 164:   RETURNED FROM get_cmds\n");
+        printf("line 165:   cmd_list->str = |%s|\n",cmd_list->str);
         while(cmd_list != NULL){
+            printf("in while\n");
             char ** tuple = get_args(cmd_list->str, &ex, &modenext);
-            printf("line 160:   mode = %c -- ex = %d-- cmd = |%s| -- argv = |%s|",modenext,ex,tuple[0],tuple[1]);
+            printf("line 166:   mode = %c -- ex = %d-- cmd = |%s| -- argv = |%s|",modenext,ex,tuple[0],tuple[1]);
             if(mode == 's'){
                 fork();
                 execv(tuple[0],&tuple[1]);
