@@ -152,9 +152,9 @@ void free_allocs(strlist * head){
     strlist * tmp = head;
     strlist * tmp2 = tmp->next;
     while(tmp != NULL){
-        free(tmp);
-        tmp = tmp2;
-        tmp2 = tmp->next;
+        tmp2 = tmp;
+        tmp = tmp2->next;
+        free(tmp2);
     }
     printf("line 159: Allocs freed");
 }
@@ -191,6 +191,9 @@ int main(int argc, char ** argv) {
             else{                                     // this else indicates parallel
                 execv(tuple[0],&tuple[1]);
             }
+            free(tuple[0]);
+            free(tuple[1]);
+            free(tuple);
             if((cmd_list->next == NULL) && ex){
                 exit(EXIT_SUCCESS);
             }
