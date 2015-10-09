@@ -52,7 +52,7 @@ strlist * append_list(strlist * curr, char * s){
     return tmp;
 }
 
-strlist * get_cmds(char buff[], int * num_cmds){
+strlist * get_cmds(char * buff, int * num_cmds){
     int * num = num_cmds;
     *num = 1;
     if(strchr(buff,'#')){
@@ -80,13 +80,14 @@ strlist * get_cmds(char buff[], int * num_cmds){
         return head;
     }
     else{
-        // int n = 0;
         strlist * item = head;
         char * point = buff;
         char * s = malloc(sizeof(char)*1024);
         int x = 0;
-        while(strstr(point,";") || strlen(point) > 0){
-            if(strstr(point,";")){
+        printf("line 87:    |%s|\n",point);
+        while(strchr(point,';') || strlen(point) > 0){
+            printf("line 89:    |%s|\n",point);
+            if(strchr(point,';')){
                 x = strstr(point,";") - point;             // pointer arithmetic to get size of substring
                 strncpy(s,point,x);
             }
@@ -95,9 +96,9 @@ strlist * get_cmds(char buff[], int * num_cmds){
             }
             item = append_list(item,s);
             point = &point[x+2];
-            printf("line 95:    point = |%s|\n",point);
+            printf("line 97:    point = |%s|\n",point);
         }
-        printf("line 97:    OUT OF WHILE LOOP\n");
+        printf("line 99:    OUT OF WHILE LOOP\n");
         free(s);
     }
     return head;
@@ -138,7 +139,7 @@ char ** get_args(char * cmd, bool * ex, char * mode){                           
 void free_allocs(strlist * head){
     strlist * tmp = head;
     strlist * tmp2 = tmp->next;
-    while(tmp!=NULL){
+    while(tmp != NULL){
         free(tmp);
         tmp = tmp2;
         tmp2 = tmp->next;
@@ -157,11 +158,11 @@ int main(int argc, char ** argv) {
     strlist * cmd_list;
     while(fgets(buff,1024,stdin) != NULL && !strstr(buff,"^D")){
         trim(buff);
-        cmd_list = get_cmds(buff,&num_cmds);
-        printf("line 124:   RETURNED FROM get_cmds\n");
+        cmd_list = get_cmds(buff, &num_cmds);
+        printf("line 160:   RETURNED FROM get_cmds\n");
         while(cmd_list != NULL){
             char ** tuple = get_args(cmd_list->str, &ex, &mode);
-            printf("mode = %c -- ex = %d-- cmd = |%s| -- argv = |%s|",mode,ex,tuple[0],tuple[1]);
+            printf("line 160:   mode = %c -- ex = %d-- cmd = |%s| -- argv = |%s|",mode,ex,tuple[0],tuple[1]);
             if(mode == 's'){
                 fork();
                 execv(tuple[0],&tuple[1]);
