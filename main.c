@@ -20,19 +20,18 @@ struct str_list{
 }; typedef struct str_list strlist;
 
 char * trim(char * str){
-    printf("ln 22:  str = |%s|\n",str);
+    printf("ln %d:  str = |%s|\n",__LINE__,str);
     char * s = str;
     /*if(strchr(s,'\n')){
         strtok(s,"\n");
     }*/
-    s[strlen(s)-1]= '\0';
-    if(str[0] == ' '){
+    s[strlen(s) - 1] = '\0';
+    while(str[0] == ' '){
         s = &s[1];
     }
-    if(strrchr(s,' ') != NULL && strlen(strchr(s,' ')) == 1){
-        char * p = strrchr(s, ' ');
-        *p = '\0';
-    }                                                       // if there's a space at the end, remove it
+    while(isspace(s[strlen(s)-1])){
+        s[strlen(s)-1] = '\0';
+    }                                                      // if there's a space at the end, remove it
     return s;
 }
 
@@ -40,7 +39,8 @@ char * trim(char * str){
 // with ->str value as a parameter
 strlist * append_list(strlist * curr, char * s){
     strlist * add = malloc(sizeof(strlist));
-    add->str = strdup(trim(s)); //malloc(sizeof(char) * strlen(s));
+    add->str = strdup(trim(s));
+    //malloc(sizeof(char) * strlen(s));
     //strncpy(add->str, trim(s), strlen(trim(s)));
     add->next = NULL;
     if(curr == NULL){                                         // Initializes
@@ -66,7 +66,7 @@ strlist * get_cmds(char * buff, int * num_cmds){
             break;
         }
         (*num)++;
-        char * ptr = strstr(buff,";") + sizeof(char);  // points to char after substring ";"
+        char * ptr = strstr(buff,";") + sizeof(char);       // points to char after substring ";"
         while(strchr(ptr,';')){
             (*num)++;
             ptr = strchr(ptr,';') + sizeof(char);
@@ -75,7 +75,7 @@ strlist * get_cmds(char * buff, int * num_cmds){
     }while(true);   // count num_cmds
     if(*num == 1){
         head = append_list(NULL,buff);
-        printf("line 75:    head->str = |%s|\n",head->str);
+        printf("line %d:    head->str = |%s|\n",__LINE__,head->str);
         return head;
     }
     else{
@@ -83,14 +83,14 @@ strlist * get_cmds(char * buff, int * num_cmds){
         char * s = malloc(sizeof(char) * 1024);
         int x = 0;
         while(strlen(point) > 0){
-            strlist * item = head;                                 // temporary strlist
-            printf("line 84:    |%s|\n",point);
+            strlist * item = head;                          // temporary strlist
+            printf("line %d:    |%s|\n",__LINE__,point);
             if(strchr(point,';')){
-                x = strchr(point,';') - point;             // pointer arithmetic to get size of substring
-                printf("line 87:    point is |%s| -- and x is |%d|\n",point,x);
+                x = strchr(point,';') - point;              // pointer arithmetic to get size of substring
+                printf("line %d:    point is |%s| -- and x is |%d|\n",__LINE__,point,x);
                 strncpy(s,point,x);
                 s[x] = '\0';
-                printf("line 90:    |%s|\n",s);
+                printf("line %d:    |%s|\n",__LINE__,s);
                 trim(s);
             }
             else{
@@ -100,11 +100,11 @@ strlist * get_cmds(char * buff, int * num_cmds){
             if(head == NULL){
                 head = append_list(head,s);
                 head->next = item;
-                printf("line 100:    head->str = |%s|\n",head->str);
+                printf("line %d:    head->str = |%s|\n",__LINE__,head->str);
             }
             else{
                 item = append_list(item,s);
-                printf("line 104:   item->str = |%s|\n",item->str);
+                printf("line %d:   item->str = |%s|\n",__LINE__,item->str);
             }
             point = &point[x + 1];
             if(strcmp(point,"")){
@@ -112,26 +112,24 @@ strlist * get_cmds(char * buff, int * num_cmds){
                 break;
             }
         }
-        printf("line 113:    OUT OF WHILE LOOP\n");
+        printf("line %d:    OUT OF WHILE LOOP\n",__LINE__);
         free(s);
     }
-    printf("line 117:   head->str = |%s|\n",head->str);
+    printf("line %d:   head->str = |%s|\n",__LINE__,head->str);
     return head;
 }
 
 char ** get_args(char * cmd, bool * ex, char * modenext){              // takes string and splits into /bin command
-    printf("line 121:   In get_args, cmd = |%s|\n",cmd);
+    printf("line %d:   In get_args, cmd = |%s|\n",__LINE__,cmd);
     char ** ret = malloc(sizeof(char *) * 2);                         // and flags/options etc
     ret[0] = malloc(sizeof(char) * 1024);
-    ret[1] = malloc(sizeof(char) * 1024);
+    ret[1] = malloc(sizeof(char) * 1024);           // LEAK HERE
     trim(cmd);
-    if(strcmp(cmd,"mode sequential")
-            || strcmp(cmd,"mode  s")){
+    if(strcmp(cmd,"mode sequential") || strcmp(cmd,"mode  s")){
         cmd = "s";
         *modenext = 's';
     }
-    else if(strcmp(cmd,"mode parallel")
-            || strcmp(cmd,"mode p")){
+    else if(strcmp(cmd,"mode parallel") || strcmp(cmd,"mode p")){
         cmd = "p";
         *modenext = 'p';
     }
@@ -140,7 +138,7 @@ char ** get_args(char * cmd, bool * ex, char * modenext){              // takes 
             cmd = "ex";
     }
     if (strstr(cmd," ")){
-        strncpy(ret[0],cmd,(strstr(cmd," ")-cmd)/sizeof(char));
+        strncpy(ret[0], cmd,(strstr(cmd," ") - cmd)/sizeof(char));
         memcpy(ret[1], &(cmd[strlen(ret[0])]), 1024 - strlen(ret[0]));
     }
     else {
@@ -156,9 +154,10 @@ void free_allocs(strlist * head){
     while(tmp != NULL){
         tmp2 = tmp;
         tmp = tmp2->next;
+        free(tmp2->str);
         free(tmp2);
     }
-    printf("line 159: Allocs freed");
+    printf("line %d: Allocs freed",__LINE__);
 }
 
 int main(int argc, char ** argv) {
@@ -178,41 +177,40 @@ int main(int argc, char ** argv) {
         strncpy(buff,trim(tmp),1024);
         head = get_cmds(buff, &num_cmds);
         cmd_list = head;
-        printf("line 181:   RETURNED FROM get_cmds | cmd_list->str = |%s|\n",cmd_list->str);
+        printf("line %d:   RETURNED FROM get_cmds | cmd_list->str = |%s|\n",__LINE__,cmd_list->str);
         int num_process = 1;
         while(cmd_list != NULL){
             printf("in while\n");
             char ** tuple = get_args(cmd_list->str, &ex, &modenext);
-            printf("line 185:   mode = %c -- ex = %d -- cmd = |%s| -- argv = |%s|\n",modenext,ex,tuple[0],tuple[1]);
+            printf("line %d:   mode = %c -- ex = %d -- cmd = |%s| -- argv = |%s|\n",__LINE__,modenext,ex,tuple[0],tuple[1]);
             if(mode == 's'){
                 int * stat = malloc(sizeof(int));
                 pid_t pid = fork();
                 //check return value of fork
                 //only wait pid for parent
                 //only execcv for child
-                if (pid==0){
+                if(pid == 0){
                     if(execv(tuple[0], &tuple[1]) < 0){
-                        fprintf(stderr, "execv failed: %s\n", strerror(errno));
+                        fprintf(stderr, "line %d: execv failed: %s\n",__LINE__,strerror(errno));
                     }
                 }
-                else if (pid> 0){
+                else if(pid > 0){
                     waitpid(pid, stat, 0);
                     free(stat);
                 }
-                
+
             }
             else{                 // this else indicates parallel
                 pid_t pid = fork();
-                
-                num_process +=1;
-                if (pid==0){
+                num_process += 1;
+                if(pid == 0){
                     if(execv(tuple[0], &tuple[1]) < 0){
-                        fprintf(stderr, "execv failed: %s\n", strerror(errno));
+                        fprintf(stderr, "line %d: execv failed: %s\n",__LINE__,strerror(errno));
                     }
                 }
             }
-            free(tuple[0]);
             free(tuple[1]);
+            free(tuple[0]);
             free(tuple);
             if((cmd_list->next == NULL) && ex){
                 exit(EXIT_SUCCESS);
