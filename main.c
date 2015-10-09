@@ -104,7 +104,7 @@ strlist * get_cmds(char * buff, int * num_cmds){
     return head;
 }
 
-char ** get_args(char * cmd, bool * ex, char * mode){                              // takes string and splits into /bin command
+char ** get_args(char * cmd, bool * ex, char * modenext){                              // takes string and splits into /bin command
     char ** ret = malloc(sizeof(char *) * 2);                         // and flags/options etc
     char * bin = malloc(sizeof(char) * 1024);
     char * argv = malloc(sizeof(char) * 1024);
@@ -113,12 +113,12 @@ char ** get_args(char * cmd, bool * ex, char * mode){                           
     if(strcmp(cmd,"mode sequential")
             || strcmp(cmd,"mode  s")){
         cmd = "s";
-        *mode = 's';
+        *modenext = 's';
     }
     else if(strcmp(cmd,"mode parallel")
             || strcmp(cmd,"mode p")){
         cmd = "p";
-        *mode = 'p';
+        *modenext = 'p';
     }
     else if(strcmp(cmd,"exit") || strstr(cmd,"exit()")){
             *ex = true;
@@ -151,6 +151,7 @@ int main(int argc, char ** argv) {
     bool ex = false;
     char buff[1024];
     char mode = 's';
+    char modenext = 's';
     char * prompt = "shell# ";
     printf("%s",prompt);
     fflush(stdout);
@@ -161,8 +162,8 @@ int main(int argc, char ** argv) {
         cmd_list = get_cmds(buff, &num_cmds);
         printf("line 160:   RETURNED FROM get_cmds\n");
         while(cmd_list != NULL){
-            char ** tuple = get_args(cmd_list->str, &ex, &mode);
-            printf("line 160:   mode = %c -- ex = %d-- cmd = |%s| -- argv = |%s|",mode,ex,tuple[0],tuple[1]);
+            char ** tuple = get_args(cmd_list->str, &ex, &modenext);
+            printf("line 160:   mode = %c -- ex = %d-- cmd = |%s| -- argv = |%s|",modenext,ex,tuple[0],tuple[1]);
             if(mode == 's'){
                 fork();
                 execv(tuple[0],&tuple[1]);
@@ -170,6 +171,7 @@ int main(int argc, char ** argv) {
             else{                                     // this else indicates parallel
                 if(cmd_list->next == NULL){
                     execv(tuple[0],&tuple[1])
+                    waitpid();
                 }
             }*/
             if(cmd_list->next == NULL && ex){
@@ -177,6 +179,7 @@ int main(int argc, char ** argv) {
             }
             cmd_list = cmd_list->next;
         }
+        mode = modenext;
     }
     free_allocs(cmd_list);
     return 0;
