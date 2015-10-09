@@ -25,12 +25,12 @@ char * trim(char * str){
     /*if(strchr(s,'\n')){
         strtok(s,"\n");
     }*/
-    s[strlen(s) - 1] = '\0';
+    //s[strlen(s) - 1] = '\0';
     while(str[0] == ' '){
         s = &s[1];
     }
     while(isspace(s[strlen(s)-1])){
-        s[strlen(s)-1] = '\0';
+        s[strlen(s) - 1] = '\0';
     }                                                      // if there's a space at the end, remove it
     return s;
 }
@@ -108,7 +108,6 @@ strlist * get_cmds(char * buff, int * num_cmds){
             }
             point = &point[x + 1];
             if(strcmp(point,"")){
-                printf("in if\n");
                 break;
             }
         }
@@ -171,6 +170,7 @@ int main(int argc, char ** argv) {
     int num_cmds = 0;
     strlist * head;
     strlist * cmd_list;
+    char ** tuple;
     while(fgets(buff,1024,stdin) != NULL && !strstr(buff,"^D")){
         char tmp[1024];
         strcpy(tmp,buff);
@@ -180,18 +180,18 @@ int main(int argc, char ** argv) {
         printf("line %d:   RETURNED FROM get_cmds | cmd_list->str = |%s|\n",__LINE__,cmd_list->str);
         int num_process = 1;
         while(cmd_list != NULL){
-            printf("in while\n");
-            char ** tuple = get_args(cmd_list->str, &ex, &modenext);
+            tuple = get_args(cmd_list->str, &ex, &modenext);
             printf("line %d:   mode = %c -- ex = %d -- cmd = |%s| -- argv = |%s|\n",__LINE__,modenext,ex,tuple[0],tuple[1]);
-            if(mode == 's'){
+            if(mode == 's' && strncmp(tuple[0],"s",strlen(tuple[0])) != 0){   // nothing should execute if command is mode
                 int * stat = malloc(sizeof(int));
                 pid_t pid = fork();
                 //check return value of fork
                 //only wait pid for parent
                 //only execcv for child
                 if(pid == 0){
+                    printf("line %d:    tuple[0] = |%s| and tuple[1] = |%s|\n",__LINE__,tuple[0],tuple[1]);
                     if(execv(tuple[0], &tuple[1]) < 0){
-                        fprintf(stderr, "line %d: execv failed: %s\n",__LINE__,strerror(errno));
+                        fprintf(stderr, "line %d:   execv failed: %s\n",__LINE__,strerror(errno));
                     }
                 }
                 else if(pid > 0){
@@ -209,9 +209,6 @@ int main(int argc, char ** argv) {
                     }
                 }
             }
-            free(tuple[1]);
-            free(tuple[0]);
-            free(tuple);
             if((cmd_list->next == NULL) && ex){
                 exit(EXIT_SUCCESS);
             }
@@ -222,6 +219,9 @@ int main(int argc, char ** argv) {
 
         mode = modenext;
     }
+    free(tuple[1]);
+    free(tuple[0]);
+    free(tuple);
     free_allocs(head);
     return 0;
 }
