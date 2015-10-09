@@ -19,37 +19,33 @@ struct str_list{
 }; typedef struct str_list strlist;
 
 char * trim(char * str){
+    char * s = str;
     strtok(str,"\n");
     if(str[0] == ' '){
-        char * edit = &str[1];
-        str = edit;
+        str = &str[1];
     }
     if(strrchr(str,' ') != NULL && strlen(strrchr(str,' ')) == 1){
         char * p = strrchr(str, ' ');
         *p = '\0';
     }                                                       // if there's a space at the end, remove it
-    return str;
+    return s;
 }
 
 // Both initializes and appends new strlist to a strlist parameter
 // with ->str value as a parameter
 strlist * append_list(strlist * curr, char * s){
-    strlist * tmp;
-    char * st = trim(s);
-    if(curr==NULL){                                         // Initializes
-        tmp = malloc(sizeof(strlist));
-        tmp->str = malloc(sizeof(char)*strlen(st));
-        strncpy(tmp->str,st,strlen(st));
-        tmp->next = NULL;
+    strlist * tmp = malloc(sizeof(strlist));
+    tmp->str = malloc(sizeof(char) * strlen(s));
+    strncpy(tmp->str, s, strlen(s));
+    tmp->next = NULL;
+    if(curr == NULL){                                         // Initializes
+        return tmp;
     }
     else{
-        curr->next = malloc(sizeof(strlist));
-        tmp = curr->next;
-        tmp->str = malloc(strlen(st));
-        strncpy(tmp->str,st,strlen(st));
-        tmp->next = NULL;
+        curr->next = tmp;
     }
-    return tmp;
+    printf("%s",tmp->str);
+    return curr;
 }
 
 strlist * get_cmds(char * buff, int * num_cmds){
@@ -60,7 +56,7 @@ strlist * get_cmds(char * buff, int * num_cmds){
         buff[(p - buff)/sizeof(char)] = '\0';
     }
     do{
-        if(!strstr(buff,";")){
+        if(!strchr(buff,';')){
             break;
         }
         printf("line 61:    MULTI-COMMAND STRING\n");
@@ -80,30 +76,46 @@ strlist * get_cmds(char * buff, int * num_cmds){
         return head;
     }
     else{
-        strlist * item = head;
         char * point = buff;
-        char * s = malloc(sizeof(char)*1024);
+        char * s = malloc(sizeof(char) * 1024);
         int x = 0;
-        printf("line 87:    |%s|\n",point);
+        strlist * item;
         while(strchr(point,';') || strlen(point) > 0){
             printf("line 89:    |%s|\n",point);
-            if(strchr(point,';')){
+            if(strstr(point,";")){
                 x = strstr(point,";") - point;             // pointer arithmetic to get size of substring
+                printf("line 92:    point is |%s| -- and x is |%d|\n",point,x);
                 strncpy(s,point,x);
+                s[x] = '\0';
+                printf("line 94:    |%s|\n",s);
+                trim(s);
             }
             else{
                 strncpy(s,point,strlen(point));
+                trim(s);
             }
-            item = append_list(item,s);
+            if(head == NULL){
+                head = append_list(head,s);
+                item = head;
+            }
+            else{
+                item = append_list(item,s);
+                printf("103 %s\n",item->str);
+            }
             point = &point[x + 1];
-            printf("line 99:    point = |%s|\n",point);
+            printf("line 106:    head->str = |%s|\n",head->str);
+            if(strcmp(point,"")){
+                printf("in if");
+                break;
+            }
             item->next = malloc(sizeof(strlist));
             item = item->next;
         }
-        item = NULL;
-        printf("line 101:    OUT OF WHILE LOOP\n");
-        free(s);
+        item->next = NULL;
+        printf("line 104:    OUT OF WHILE LOOP\n");
+        //free(s);
     }
+    printf("line 115:   head->str = |%s| --- head->next->str = |%s|\n",head->str,head->next->str);
     return head;
 }
 
@@ -162,10 +174,11 @@ int main(int argc, char ** argv) {
     int num_cmds = 0;
     strlist * cmd_list;
     while(fgets(buff,1024,stdin) != NULL && !strstr(buff,"^D")){
-        trim(buff);
+        char tmp[1024];
+        strcpy(tmp,buff);
+        strncpy(buff,trim(tmp),1024);
         cmd_list = get_cmds(buff, &num_cmds);
-        printf("line 164:   RETURNED FROM get_cmds\n");
-        printf("line 165:   cmd_list->str = |%s|\n",cmd_list->str);
+        printf("line 175:   RETURNED FROM get_cmds | cmd_list->str = |%s|\n",cmd_list->str);
         while(cmd_list != NULL){
             printf("in while\n");
             char ** tuple = get_args(cmd_list->str, &ex, &modenext);
