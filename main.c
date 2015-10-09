@@ -11,6 +11,7 @@
 #include <poll.h>
 #include <signal.h>
 #include <stdbool.h>
+#include <errno.h>
 
 // Linked list struct
 struct str_list{
@@ -21,9 +22,10 @@ struct str_list{
 char * trim(char * str){
     printf("ln 22:  str = |%s|\n",str);
     char * s = str;
-    if(strchr(s,'\n')){
+    /*if(strchr(s,'\n')){
         strtok(s,"\n");
-    }
+    }*/
+    s[strlen(s)-1]= '\0';
     if(str[0] == ' '){
         s = &s[1];
     }
@@ -38,8 +40,8 @@ char * trim(char * str){
 // with ->str value as a parameter
 strlist * append_list(strlist * curr, char * s){
     strlist * add = malloc(sizeof(strlist));
-    add->str = malloc(sizeof(char) * strlen(s));
-    strncpy(add->str, trim(s), strlen(trim(s)));
+    add->str = strdup(trim(s)); //malloc(sizeof(char) * strlen(s));
+    //strncpy(add->str, trim(s), strlen(trim(s)));
     add->next = NULL;
     if(curr == NULL){                                         // Initializes
         return add;
@@ -177,6 +179,7 @@ int main(int argc, char ** argv) {
         head = get_cmds(buff, &num_cmds);
         cmd_list = head;
         printf("line 181:   RETURNED FROM get_cmds | cmd_list->str = |%s|\n",cmd_list->str);
+        int num_process = 1;
         while(cmd_list != NULL){
             printf("in while\n");
             char ** tuple = get_args(cmd_list->str, &ex, &modenext);
@@ -184,12 +187,29 @@ int main(int argc, char ** argv) {
             if(mode == 's'){
                 int * stat = malloc(sizeof(int));
                 pid_t pid = fork();
-                execv(tuple[0],&tuple[1]);
-                waitpid(pid,stat,0);
-                free(stat);
+                //check return value of fork
+                //only wait pid for parent
+                //only execcv for child
+                if (pid==0){
+                    if(execv(tuple[0], &tuple[1]) < 0){
+                        fprintf(stderr, "execv failed: %s\n", strerror(errno));
+                    }
+                }
+                else if (pid> 0){
+                    waitpid(pid, stat, 0);
+                    free(stat);
+                }
+                
             }
-            else{                                     // this else indicates parallel
-                execv(tuple[0],&tuple[1]);
+            else{                 // this else indicates parallel
+                pid_t pid = fork();
+                
+                num_process +=1;
+                if (pid==0){
+                    if(execv(tuple[0], &tuple[1]) < 0){
+                        fprintf(stderr, "execv failed: %s\n", strerror(errno));
+                    }
+                }
             }
             free(tuple[0]);
             free(tuple[1]);
@@ -199,6 +219,10 @@ int main(int argc, char ** argv) {
             }
             cmd_list = cmd_list->next;
         }
+        //wait for parallel process
+        wait(&num_process);
+
+        free(stat);
         mode = modenext;
     }
     free_allocs(head);
