@@ -37,18 +37,18 @@ char * trim(char * str){
 // Both initializes and appends new strlist to a strlist parameter
 // with ->str value as a parameter
 strlist * append_list(strlist * curr, char * s){
-    strlist * tmp = malloc(sizeof(strlist));
-    tmp->str = malloc(sizeof(char) * strlen(s));
-    strncpy(tmp->str, trim(s), strlen(trim(s)));
-    tmp->next = NULL;
+    strlist * add = malloc(sizeof(strlist));
+    add->str = malloc(sizeof(char) * strlen(s));
+    strncpy(add->str, trim(s), strlen(trim(s)));
+    add->next = NULL;
     if(curr == NULL){                                         // Initializes
-        return tmp;
+        return add;
     }
     else{
-        curr->next = tmp;
+        curr->next = add;
     }
-    printf("%s",tmp->str);
-    return tmp;
+    printf("%s",add->str);
+    return add;
 }
 
 strlist * get_cmds(char * buff, int * num_cmds){
@@ -111,7 +111,7 @@ strlist * get_cmds(char * buff, int * num_cmds){
             }
         }
         printf("line 113:    OUT OF WHILE LOOP\n");
-        //free(s);
+        free(s);
     }
     printf("line 117:   head->str = |%s|\n",head->str);
     return head;
@@ -143,10 +143,8 @@ char ** get_args(char * cmd, bool * ex, char * modenext){              // takes 
     }
     else {
         strcpy(ret[0],cmd);
-        ret[1] = "";
+        ret[1] = NULL;
     }
-    // ret[0] = bin;
-    // ret[1] = argv;
     return ret;
 }
 
@@ -158,7 +156,7 @@ void free_allocs(strlist * head){
         tmp = tmp2;
         tmp2 = tmp->next;
     }
-    return;
+    printf("line 159: Allocs freed");
 }
 
 int main(int argc, char ** argv) {
@@ -170,27 +168,29 @@ int main(int argc, char ** argv) {
     printf("%s",prompt);
     fflush(stdout);
     int num_cmds = 0;
+    strlist * head;
     strlist * cmd_list;
     while(fgets(buff,1024,stdin) != NULL && !strstr(buff,"^D")){
         char tmp[1024];
         strcpy(tmp,buff);
         strncpy(buff,trim(tmp),1024);
-        cmd_list = get_cmds(buff, &num_cmds);
+        head = get_cmds(buff, &num_cmds);
+        cmd_list = head;
         printf("line 181:   RETURNED FROM get_cmds | cmd_list->str = |%s|\n",cmd_list->str);
         while(cmd_list != NULL){
             printf("in while\n");
             char ** tuple = get_args(cmd_list->str, &ex, &modenext);
             printf("line 185:   mode = %c -- ex = %d -- cmd = |%s| -- argv = |%s|\n",modenext,ex,tuple[0],tuple[1]);
-        /*  if(mode == 's'){
-                fork();
+            if(mode == 's'){
+                int * stat = malloc(sizeof(int));
+                pid_t pid = fork();
                 execv(tuple[0],&tuple[1]);
+                waitpid(pid,stat,0);
+                free(stat);
             }
             else{                                     // this else indicates parallel
-                if(cmd_list->next == NULL){
-                    execv(tuple[0],&tuple[1])
-                    waitpid();
-                }
-            }*/
+                execv(tuple[0],&tuple[1]);
+            }
             if((cmd_list->next == NULL) && ex){
                 exit(EXIT_SUCCESS);
             }
@@ -198,6 +198,6 @@ int main(int argc, char ** argv) {
         }
         mode = modenext;
     }
-    free_allocs(cmd_list);
+    free_allocs(head);
     return 0;
 }
