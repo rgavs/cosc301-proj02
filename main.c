@@ -26,9 +26,9 @@ char * trim(char * str){
         strtok(s,"\n");
     }*/
     //s[strlen(s) - 1] = '\0';
-   /* while(s[0] == ' '){ //Seg fault
+    while(s[0] == ' '){ //Seg fault
         s = &s[1];
-    } */
+    } 
     while(isspace(s[strlen(s)-1])){
         s[strlen(s) - 1] = '\0';
     }                                                      // if there's a space at the end, remove it
@@ -52,18 +52,18 @@ strlist * append_list(strlist * curr, char * s){
     printf("%s",add->str);
     return add;
 }
-char** tokenify(const char *s) {
+char** tokenify(const char *s, char * split) {
 	char *str_copy = strdup(s);
-	const char * semicolon= ";";
+	//const char * semicolon= ";";
 	char *token;
 	int count =1;
-	for (token=strtok(str_copy, semicolon); token!=NULL; token=strtok(NULL, semicolon)){
+	for (token=strtok(str_copy, split); token!=NULL; token=strtok(NULL, split)){
 		count++;	
 	}
 	char **tokens = malloc(sizeof(char*)*count);
 	char *str_copy2 = strdup(s);
 	int index = 0;
-	for (token=strtok(str_copy2, semicolon); token!=NULL; token=strtok(NULL, semicolon)){
+	for (token=strtok(str_copy2, split); token!=NULL; token=strtok(NULL, split)){
 		tokens[index]=strdup(token);
 		index++;
 	}
@@ -138,12 +138,12 @@ strlist * get_cmds(char * buff, int * num_cmds){
     return head;
 }
 */
-void get_args(char * cmd, bool * ex, char * modenext){              // takes string and splits into /bin command
+char * get_args(char * cmd, bool * ex, char * modenext){              // takes string and splits into /bin command
     printf("line %d:   In get_args, cmd = |%s|\n",__LINE__,cmd);
     //char ** ret = malloc(sizeof(char *));                         // and flags/options etc
     //ret[0] = malloc(sizeof(char) * 1024);
     //ret[1] = malloc(sizeof(char) * 1024);           // LEAK HERE
-    cmd = trim(cmd);
+    //cmd = trim(cmd);
     if( (strcmp(cmd,"mode sequential")==0) || (strcmp(cmd,"mode  s")==0) ){
         cmd = "s";
         *modenext = 's';
@@ -167,6 +167,7 @@ void get_args(char * cmd, bool * ex, char * modenext){              // takes str
      printf("line %d:   In get_args, ret[0] = |%s|\n",__LINE__,ret[0]);
      printf("line %d:   In get_args, ret[1] = |%s|\n",__LINE__,ret[1]);
     return ret; */
+    return cmd;
 }
 
 void free_allocs(strlist * head){
@@ -197,19 +198,21 @@ int main(int argc, char ** argv) {
         if(strchr(buff,'#')){
         char * p = strchr(buff,'#');
         buff[(p - buff)/sizeof(char)] = '\0';
-    }
+        }
         char tmp[1024];
         strcpy(tmp,buff);
         strncpy(buff,trim(tmp),1024);
         //head = get_cmds(buff, &num_cmds);
         //cmd_list = head;
-        cmd_array = tokenify(buff);
+        cmd_array = tokenify(buff, ";");
         //printf("line %d:   RETURNED FROM get_cmds | cmd_list->str = |%s|\n",__LINE__,cmd_list->str);
         int num_process = 0;
         int command =0;
         while(cmd_array != NULL){
+            cmd_array = tokenify(cmd_array[command], "\t\n");
             //tuple= get_args(cmd_list->str, &ex, &modenext);
-            get_args(cmd_array[command], &ex, &modenext);
+            cmd_array[command] = get_args(cmd_array[command], &ex, &modenext);
+            if ( (strcmp(cmd_array[command], "s") != 0) || (strcmp(cmd_array[command], "p")!= 0) || (strcmp( cmd_array[command], "ex") != 0 ) ){
             //printf("line %d:   mode = %c -- ex = %d -- cmd = |%s| -- argv = |%s|\n",__LINE__,modenext,ex,tuple[0],tuple[1]);
             if(mode == 's') {// && strncmp(tuple[0],"s",strlen(tuple[0])) != 0){   // nothing should execute if command is mode 
                 int * stat = malloc(sizeof(int));
@@ -247,12 +250,13 @@ int main(int argc, char ** argv) {
         }
         //wait for parallel process
         wait(&num_process);
-
+        }
         mode = modenext;
     }
     //free(tuple[1]);
     //free(tuple[0]);
     //free(tuple);
     //free_allocs(head);
+    free(cmd_array);
     return 0;
 }
