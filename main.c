@@ -78,21 +78,18 @@ int main(int argc, char ** argv) {
     char ** cmd_array = NULL;
     while(fgets(buff,1024,stdin) != NULL && !strstr(buff,"^D")){
         if(strchr(buff,'#')){
-        char * p = strchr(buff,'#');
-        buff[(p - buff)/sizeof(char)] = '\0';
+            char * p = strchr(buff,'#');
+            buff[(p - buff)/sizeof(char)] = '\0';
         }
         cmd_array = tokenify(buff, ";");
         int num_process = 0;
         int command =0;
-        printf("line %d:   cmd_array | cmd_list->str = |%s|\n",__LINE__,cmd_array[command]);
         while(cmd_array != NULL){
-            cmd_array = tokenify(cmd_array[command], "\t\n");
-         printf("line %d:   cmd_array | cmd_list->str = |%s|\n",__LINE__,cmd_array[command]);
+            cmd_array[command] = *tokenify(cmd_array[command], " \t\n");
             cmd_array[command] = get_args(cmd_array[command], &ex, &modenext);
-                    printf("line %d:   cmd_array  = |%s|\n",__LINE__,cmd_array[command]);
             if ( (strcmp(cmd_array[command], "s") != 0) || (strcmp(cmd_array[command], "p")!= 0) || (strcmp( cmd_array[command], "ex") != 0 ) ){ // nothing should execute if command is mode 
 
-                if(mode == 's')   
+                if(mode == 's')   {
                     int * stat = malloc(sizeof(int));
                     pid_t pid = fork();
                 //check return value of fork
@@ -100,7 +97,7 @@ int main(int argc, char ** argv) {
                 //only execcv for child
                     if(pid == 0){
 
-                        if(execv(cmd_array[command], cmd_array) < 0){
+                        if(execv(cmd_array[0], cmd_array) < 0){
                             fprintf(stderr, "line %d:   execv failed: %s\n",__LINE__,strerror(errno));
                         }
                     }
@@ -110,10 +107,10 @@ int main(int argc, char ** argv) {
                     }
 
                 }
-                else{                 // this else indicates parallel
+                else{     // this else indicates parallel
                     pid_t pid = fork();
                     if(pid == 0){
-                        if(execv(cmd_array[command], cmd_array) < 0){
+                        if(execv(cmd_array[0], cmd_array) < 0){
                             fprintf(stderr, "line %d: execv failed: %s\n",__LINE__,strerror(errno));
                         }
                     num_process += 1;
@@ -124,19 +121,16 @@ int main(int argc, char ** argv) {
                     exit(EXIT_SUCCESS);
                 }
    
-                
+                //wait for parallel process
+                wait(&num_process);
             }
-        //wait for parallel process
-            wait(&num_process);  
-            command +=1;
+            
+            //command +=1;
+            cmd_array= &cmd_array[command + 1];
         }
         
         mode = modenext;
     }
-    //free(tuple[1]);
-    //free(tuple[0]);
-    //free(tuple);
-    //free_allocs(head);
     free(cmd_array);
     return 0;
 }
